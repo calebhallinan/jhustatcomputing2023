@@ -41,11 +41,13 @@ as_tibble(chocolate)
 # glimpse(chocolate)
 ```
 
+
 ## Part 1: Explore Data
+
 
 1. Make a histogram of the rating scores to visualize the overall distribution of scores. Change the number of bins from the default to 10, 15, 20, and 25. Pick on the one that you think looks the best. Explain what the difference is when you change the number of bins and explain why you picked the one you did.
 
-```{r q1, fig.align='center'}
+```{r 1q1, fig.align='center'}
 # use ggplot for histogram
 ggplot(chocolate, aes(x=rating)) + geom_histogram(bins=10) + labs(title="Distribution of Rating Scores", x = "Rating Score", y = "Count") +
   theme(plot.title = element_text(hjust = 0.5))
@@ -56,7 +58,7 @@ I believe 10 bins looks the best which is why I choose to output it. When testin
 
 2. Consider the countries where the beans originated from. How many reviews come from each country of bean origin?
 
-```{r q2, fig.align='center'}
+```{r 1q2, fig.align='center'}
 # review per country
 chocolate %>%
     group_by(country_of_bean_origin) %>%
@@ -68,7 +70,7 @@ It seems the U.S.A. is not a popular country for producing beans at 33 compared 
 
 3. What is average rating scores from reviews of chocolate bars that have Ecuador as country_of_bean_origin in this dataset? For this same set of reviews, also calculate (1) the total number of reviews and (2) the standard deviation of the rating scores. Your answer should be a new data frame with these three summary statistics in three columns. Label the name of these columns mean, sd, and total.
 
-```{r q3, fig.align='center'}
+```{r 1q3, fig.align='center'}
 # get stats
 ecuador_stats = chocolate[chocolate$country_of_bean_origin == "Ecuador",] %>%
     group_by(country_of_bean_origin) %>% # NOTE: Added this to print Ecuador in table
@@ -84,7 +86,7 @@ The summary statistics for Ecuador as a country of bean origin are as follows: M
 
 4. Which country makes the best chocolate (or has the highest ratings on average) with beans from Ecuador?
 
-```{r q4, fig.align='center'}
+```{r 1q4, fig.align='center'}
 # company with best chocolate from Ecuador
 chocolate[chocolate$country_of_bean_origin == "Ecuador",] %>%
     group_by(country_of_bean_origin, company_location) %>%
@@ -96,7 +98,7 @@ The company that makes the best chocolate with beans from Ecuador based on ratin
 
 5. Calculate the average rating across all country of origins for beans. Which top 3 countries have the highest ratings on average?
 
-```{r q5, fig.align='center'}
+```{r 1q5, fig.align='center'}
 # top 3 countries
 chocolate %>%
     group_by(country_of_bean_origin) %>%
@@ -108,7 +110,7 @@ The top 3 countires with the highest ratings on average are Tobago, China, and S
 
 6.Following up on the previous problem, now remove any countries of bean origins that have less than 10 chocolate bar reviews. Now, which top 3 countries have the highest ratings on average?
 
-```{r q6, fig.align='center'}
+```{r 1q6, fig.align='center'}
 # top 3 countries
 chocolate %>%
     group_by(country_of_bean_origin) %>%
@@ -131,7 +133,7 @@ Use the functions in dplyr, tidyr, and lubridate to perform the following steps 
     
 On average, which category of chocolate percentage is most highly rated? Do these countries mostly agree or are there disagreements?
 
-```{r q7, fig.align='center'}
+```{r 1q7, fig.align='center'}
 # 1. countries with less than 50 reviews
 gt50 = chocolate %>%
     group_by(country_of_bean_origin) %>%
@@ -161,10 +163,70 @@ chocolate_gt50$cocoa_percent_group = factor(chocolate_gt50$cocoa_percent_group)
 ggplot(chocolate_gt50, aes(x=cocoa_percent_group, y = rating)) + 
     geom_boxplot() +
     facet_wrap(. ~ country_of_bean_origin)
-    
 ```
 On average.....
 ?????? Fix this 
+
+
+## Part 2: Join two datasets together
+
+
+1. Use this dataset it to create a new column called continent in our chocolate dataset that contains the continent name for each review where the country of bean origin is.
+
+```{r 2q1, fig.align='center'}
+# load in gapminder package
+library(gapminder)
+
+# subset gapminder
+gapminder_sub = gapminder[,c("country", "continent")]
+# rename columns
+rename(gapminder_sub) = c("country_of_bean_origin", "continent")
+
+# add new column
+by = join_by(country_of_bean_origin == country)
+chocolate_continent = left_join(x = chocolate, y = unique(gapminder[,c("country", "continent")]), by)
+# get rid of NA's by adding correct place
+# print which are NA
+subset(chocolate_continent, is.na(chocolate_continent$continent))
+# correct NA's
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Fiji",]$continent = "Oceania"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Fiji",]$continent = "Oceania"
+
+
+
+```
+?????? Rename all countries????
+
+2. Only keep reviews that have reviews from countries of bean origin with at least 10 reviews.
+
+```{r 2q2, fig.align='center'}
+# at least 10 reviews
+top10 = chocolate_continent %>%
+    group_by(country_of_bean_origin) %>%
+    summarise(num_reviews = length(country_of_bean_origin)) %>%
+    filter(., num_reviews >= 10)
+
+# subset by 10 reviews
+chocolate_over10reviews = chocolate_continent[chocolate_continent$country_of_bean_origin %in% top10$country_of_bean_origin,]
+```
+
+
+3. Also, remove the country of bean origin named "Blend".
+
+```{r 2q3, fig.align='center'}
+# remove blend
+chocolate_over10reviews = chocolate_over10reviews[chocolate_over10reviews$country_of_bean_origin != "Blend",]
+```
+
+4. Make a set of violin plots with ratings on the y-axis and continents on the x-axis.
+
+```{r 2q4, fig.align='center'}
+# violinplots
+ggplot(chocolate_over10reviews, aes(x=continent, y = rating)) + geom_violin()
+
+```
+
+
 
 ```{r session}
 options(width = 120)

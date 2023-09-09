@@ -1,0 +1,172 @@
+---
+title: "Project 1"
+mainfont: Arial
+sansfont: Arial
+fontsize: 12pt
+author: Caleb Hallinan
+output: html_document
+date: "2023-09-08"
+---
+
+<!-- center header - Maybe a better way to do this ? --> 
+<style type="text/css">
+h1.title {
+  text-align: center;
+}
+h4.author {
+  text-align: center;
+}
+h4.date {
+  text-align: center;
+}
+</style>
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# read in packates
+library(tidyverse)
+```
+
+## Read in Data
+
+Read in Data from TidyTuesday
+
+```{r data}
+# using here package for relative path
+# NOTE: I downloaded jhustatcomputing2023 repository to local machine :)
+chocolate = readRDS(here::here("data", "chocolate.RDS"))
+as_tibble(chocolate)
+# glimpse(chocolate)
+```
+
+## Part 1: Explore Data
+
+1. Make a histogram of the rating scores to visualize the overall distribution of scores. Change the number of bins from the default to 10, 15, 20, and 25. Pick on the one that you think looks the best. Explain what the difference is when you change the number of bins and explain why you picked the one you did.
+
+```{r q1, fig.align='center'}
+# use ggplot for histogram
+ggplot(chocolate, aes(x=rating)) + geom_histogram(bins=10) + labs(title="Distribution of Rating Scores", x = "Rating Score", y = "Count") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+I believe 10 bins looks the best which is why I choose to output it. When testing other bins, there seemed to be many gaps between bins which made it harder to see the overall distribution of rating score. However, when using 10 bins it removes any gaps between bins and the overall shape of the distribution is clear. However, I would do further testing on the distribution to confirm it is normal.
+
+
+2. Consider the countries where the beans originated from. How many reviews come from each country of bean origin?
+
+```{r q2, fig.align='center'}
+# review per country
+chocolate %>%
+    group_by(country_of_bean_origin) %>%
+    summarise(reveiw_totals = length(country_of_bean_origin))
+
+```
+It seems the U.S.A. is not a popular country for producing beans at 33 compared to others (ex. Dominican Republic at 226).
+
+
+3. What is average rating scores from reviews of chocolate bars that have Ecuador as country_of_bean_origin in this dataset? For this same set of reviews, also calculate (1) the total number of reviews and (2) the standard deviation of the rating scores. Your answer should be a new data frame with these three summary statistics in three columns. Label the name of these columns mean, sd, and total.
+
+```{r q3, fig.align='center'}
+# get stats
+ecuador_stats = chocolate[chocolate$country_of_bean_origin == "Ecuador",] %>%
+    group_by(country_of_bean_origin) %>% # NOTE: Added this to print Ecuador in table
+    summarise(mean = mean(rating), sd = sd(rating), total = length(rating))
+# print new data frame
+ecuador_stats
+
+```
+The summary statistics for Ecuador as a country of bean origin are as follows: Mean = 3.16, Standard Deviation = 0.512, and Total Reviews = 219
+
+?????????? ok to print ecuador?
+
+
+4. Which country makes the best chocolate (or has the highest ratings on average) with beans from Ecuador?
+
+```{r q4, fig.align='center'}
+# company with best chocolate from Ecuador
+chocolate[chocolate$country_of_bean_origin == "Ecuador",] %>%
+    group_by(country_of_bean_origin, company_location) %>%
+    summarise(mean = mean(rating)) %>%
+    slice_max(mean)
+```
+The company that makes the best chocolate with beans from Ecuador based on rating is Australia at 3.8125
+
+
+5. Calculate the average rating across all country of origins for beans. Which top 3 countries have the highest ratings on average?
+
+```{r q5, fig.align='center'}
+# top 3 countries
+chocolate %>%
+    group_by(country_of_bean_origin) %>%
+    summarise(mean = mean(rating)) %>%
+    slice_max(mean, n=3)
+```
+The top 3 countires with the highest ratings on average are Tobago, China, and Sao Tome & Principe.
+
+
+6.Following up on the previous problem, now remove any countries of bean origins that have less than 10 chocolate bar reviews. Now, which top 3 countries have the highest ratings on average?
+
+```{r q6, fig.align='center'}
+# top 3 countries
+chocolate %>%
+    group_by(country_of_bean_origin) %>%
+    summarise(mean = mean(rating), num_reviews = length(country_of_bean_origin)) %>%
+    filter(., num_reviews >= 10) %>%
+    slice_max(mean, n=3)
+```
+After removing countries with less than 10 reviews, the top 3 countries with the highest ratings on average are Solomon Islands, Congo, and Cuba.
+
+???????????? >10 or >=10
+
+
+7. For this last part, let’s explore the relationship between percent chocolate and ratings.
+Use the functions in dplyr, tidyr, and lubridate to perform the following steps to the chocolate dataset:
+
+    1. Identify the countries of bean origin with at least 50 reviews. Remove reviews from countries are not in this list.
+    2. Using the variable describing the chocolate percentage for each review, create a new column that groups chocolate percentages into one of four groups: (i) <60%, (ii) >=60 to <70%, (iii) >=70 to <90%, and (iii) >=90% (Hint check out the substr() function in base R and the case_when() function from dplyr – see example below).
+    3. Using the new column described in #2, re-order the factor levels (if needed) to be starting with the smallest percentage group and increasing to the largest percentage group (Hint check out the fct_relevel() function from forcats).
+    4. For each country, make a set of four side-by-side boxplots plotting the groups on the x-axis and the ratings on the y-axis. These plots should be faceted by country.
+    
+On average, which category of chocolate percentage is most highly rated? Do these countries mostly agree or are there disagreements?
+
+```{r q7, fig.align='center'}
+# 1. countries with less than 50 reviews
+gt50 = chocolate %>%
+    group_by(country_of_bean_origin) %>%
+    summarise(review_total = length(country_of_bean_origin)) %>%
+    filter(., review_total >= 50)
+# subset only countries I want
+chocolate_gt50 = chocolate[chocolate$country_of_bean_origin %in% gt50$country_of_bean_origin,]
+# print to show df
+# chocolate_gt50
+
+# 2. new column
+chocolate_gt50 = chocolate_gt50 %>%
+    mutate(
+        cocoa_percent_group = case_when(
+            cocoa_percent < 60 ~ "<60%",
+            cocoa_percent >= 60 & cocoa_percent < 70 ~ ">=60 to <70%",
+            cocoa_percent >= 70 & cocoa_percent < 90 ~ ">=70 to <90%",
+            cocoa_percent >= 90 ~ ">90%"
+        )
+    )
+
+# 3. factor relevel
+chocolate_gt50$cocoa_percent_group = factor(chocolate_gt50$cocoa_percent_group)
+# do not need to refactor levels!
+
+# 4. boxplots
+ggplot(chocolate_gt50, aes(x=cocoa_percent_group, y = rating)) + 
+    geom_boxplot() +
+    facet_wrap(. ~ country_of_bean_origin)
+    
+```
+On average.....
+?????? Fix this 
+
+```{r session}
+options(width = 120)
+sessioninfo::session_info()
+```

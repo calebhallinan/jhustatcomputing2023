@@ -180,7 +180,7 @@ library(gapminder)
 # subset gapminder
 gapminder_sub = gapminder[,c("country", "continent")]
 # rename columns
-rename(gapminder_sub) = c("country_of_bean_origin", "continent")
+colnames(gapminder_sub) = c("country_of_bean_origin", "continent")
 
 # add new column
 by = join_by(country_of_bean_origin == country)
@@ -188,14 +188,41 @@ chocolate_continent = left_join(x = chocolate, y = unique(gapminder[,c("country"
 # get rid of NA's by adding correct place
 # print which are NA
 subset(chocolate_continent, is.na(chocolate_continent$continent))
+
 # correct NA's
 chocolate_continent[chocolate_continent$country_of_bean_origin == "Fiji",]$continent = "Oceania"
-chocolate_continent[chocolate_continent$country_of_bean_origin == "Fiji",]$continent = "Oceania"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Burma",]$continent = "Asia"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Papua New Guinea",]$continent = "Oceania"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Vanuatu",]$continent = "Oceania"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Trinidad",]$continent = "Americas"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Sao Tome",]$continent = "Africa"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Belize",]$continent = "Americas"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Grenada",]$continent = "Americas"
+# assigning blend to americas here for now, delete it later but wanted everything to be in order :)
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Blend",]$continent = "Americas"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Solomon Islands",]$continent = "Oceania"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Congo",]$continent = "Africa"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Ivory Coast",]$continent = "Africa"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Martinique",]$continent = "Americas"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "St. Lucia",]$continent = "Americas"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "U.S.A.",]$continent = "Americas"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "St.Vincent-Grenadines",]$continent = "Americas"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Tobago",]$continent = "Americas"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Sao Tome & Principe",]$continent = "Africa"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Sumatra",]$continent = "Asia"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Samoa",]$continent = "Oceania"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Principe",]$continent = "Africa"
+# says it could be asia or oceania?
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Sulawesi",]$continent = "Asia"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "Suriname",]$continent = "Americas"
+chocolate_continent[chocolate_continent$country_of_bean_origin == "DR Congo",]$continent = "Africa"
 
-
+# confirm levels
+# levels(chocolate_continent$continent)
 
 ```
-?????? Rename all countries????
+Hope all these are the correct labels!
+
 
 2. Only keep reviews that have reviews from countries of bean origin with at least 10 reviews.
 
@@ -218,16 +245,185 @@ chocolate_over10reviews = chocolate_continent[chocolate_continent$country_of_bea
 chocolate_over10reviews = chocolate_over10reviews[chocolate_over10reviews$country_of_bean_origin != "Blend",]
 ```
 
+
 4. Make a set of violin plots with ratings on the y-axis and continents on the x-axis.
 
 ```{r 2q4, fig.align='center'}
 # violinplots
-ggplot(chocolate_over10reviews, aes(x=continent, y = rating)) + geom_violin()
+ggplot(chocolate_over10reviews, aes(x=continent, y = rating, fill = continent)) + 
+  geom_violin() + 
+  geom_boxplot(width=0.1, fill="white") + 
+  labs(title="Distribution of Rating for each Continent",x="Continent", y = "Rating") +
+  theme_classic()
 
 ```
 
 
 
+## Part 3: Convert wide data into long data
+
+
+1. Create a new set of columns titled beans, sugar, cocoa_butter, vanilla, letchin, and salt that contain a 1 or 0 representing whether or not that review for the chocolate bar contained that ingredient (1) or not (0).
+
+```{r 3q1, fig.align='center'}
+# new columns
+# beans
+chocolate$beans =  as.numeric(str_detect(chocolate$ingredients, "B"))
+# sugar
+chocolate$sugar =  as.numeric(str_detect(chocolate$ingredients, "S"))
+# cocao_butter
+chocolate$cocoa_butter =  as.numeric(str_detect(chocolate$ingredients, "C"))
+# vanilla
+chocolate$vanilla =  as.numeric(str_detect(chocolate$ingredients, "V"))
+# letchin
+chocolate$letchin =  as.numeric(str_detect(chocolate$ingredients, "L"))
+# salt
+chocolate$salt = as.numeric(str_detect(chocolate$ingredients, "Sa"))
+```
+???? S* count as sugar?
+
+
+2. Create a new set of columns titled char_cocoa, char_sweet, char_nutty, char_creamy, char_roasty, char_earthy that contain a 1 or 0 representing whether or not that the most memorable characteristic for the chocolate bar had that word (1) or not (0). For example, if the word “sweet” appears in the most_memorable_characteristics, then record a 1, otherwise a 0 for that review in the char_sweet column (Hint: check out str_detect() from the stringr package).
+
+```{r 3q2, fig.align='center'}
+# new columns
+chocolate$char_cocoa = as.numeric(str_detect(chocolate$most_memorable_characteristics, "cocoa"))
+
+chocolate$char_sweet = as.numeric(str_detect(chocolate$most_memorable_characteristics, "sweet"))
+
+chocolate$char_nutty = as.numeric(str_detect(chocolate$most_memorable_characteristics, "nutty"))
+
+chocolate$char_creamy = as.numeric(str_detect(chocolate$most_memorable_characteristics, "creamy"))
+
+chocolate$char_roasty = as.numeric(str_detect(chocolate$most_memorable_characteristics, "roasty"))
+
+chocolate$char_earthy = as.numeric(str_detect(chocolate$most_memorable_characteristics, "earthy"))
+```
+
+
+3. For each year (i.e. review_date), calculate the mean value in each new column you created across all reviews for that year. (Hint: If all has gone well thus far, you should have a dataset with 16 rows and 13 columns).
+
+```{r 3q3, fig.align='center'}
+# mean of years
+chocolate_means = chocolate %>%
+  group_by(review_date) %>%
+  summarise(across(beans:char_earthy,  mean, na.rm = TRUE))
+```
+NOTE: incorrect numbers... I think bc of NAs
+
+
+4. Convert this wide dataset into a long dataset with a new feature and mean_score column.
+
+```{r 3q4, fig.align='center'}
+# convert data
+chocolate_means = chocolate_means %>%
+  pivot_longer(-review_date, names_to = "feature", values_to = "mean_score")
+```
+NOTE: is correct just numbers are wrong bc of 3 rn
+
+
+
+## Part 4: Data visualization
+
+
+1. An overall title for the plot and a subtitle summarizing key trends that you found. Also include a caption in the figure with your name.
+2. Both the observed points for the mean_score, but also a smoothed non-linear pattern of the trend
+3. All plots should be shown in the one figure
+4. There should be an informative x-axis and y-axis label
+
+```{r 4q1234, fig.align='center'}
+# graph
+ggplot(chocolate_means, aes(x = review_date, y = mean_score, color = feature)) + 
+  geom_point() + 
+  geom_smooth() + 
+  labs(
+        title = "NEED SUBTITLE TOO",
+        x = "Years",
+        y = "Mean score??"
+    )
+
+```
+Needs a lot of work
+
+
+## Part 5: Make the worst plot you can!
+
+1. Make the absolute worst plot that you can. You need to customize it in at least 7 ways to make it awful.
+2. In your document, write 1 - 2 sentences about each different customization you added (using bullets – i.e. there should be at least 7 bullet points each with 1-2 sentences), and how it could be useful for you when you want to make an awesome data visualization.
+
+```{r 5q1, fig.align='center'}
+# graph
+ggplot(chocolate, aes(x = review_date, y = cocoa_percent, color = rating)) + 
+  geom_point(alpha = 1 / 10, size = 1) +
+  labs(title = "my plot") +
+  scale_color_gradient(low="yellow", high="white") +
+  theme_bw()  +
+  geom_count() + 
+  theme(legend.position = "top", axis.text.x = element_text(size = 20, angle=135), axis.title.x = element_text(size = 6), 
+        axis.title.y = element_text(size = 6), plot.title = element_text(color = "pink")) 
+
+```
+Honestly this was tough for me to decipher and I made it! Here are the 7 ways I tried to make it awful (Also, I used numbers instead of bullets to be more clear :)):
+
+1. The title has no meaning, is above the legend, and is randomly pink which makes it hard to see in the top left corner. In the future I would maybe bold the title, make it meaningful, center it on the figure, and make the biggest text size.
+
+2. The x and y axis labels are both extremely small and still the variable name it has in the dataframe. Ideally these will be capitalized, have no underscore, and a normal size! Sometimes you may also need to add units to the variable to be more clear.
+
+3. The x and y axis are messed up in different ways. The x axis is way too big, only shows three years, and is rotated 135 degrees. I'd like to see maybe every 2 years instead of 5, normal size font, and definitely not 135 degrees (90 is fine if it makes sense, but here normal would be best). The y axis is out of order, unreadable, and has the percent for every label. I'd make sure all font is readable and spaced out, and remove the % sign while adding it to the y label instead.
+
+4. The legend and its colors are hard to read, randomly at the top, and uses odd colors. This helped me in understanding good legend position, how to change the color gradient, and the cool addition custimations to the legend you can make!
+
+5. theme bw
+
+6. alpha for points and too big n
+
+7. Overall, this plot isn't really expressing anything of importance. There are multiple points per year, and 
+This helped me get an idea of w
+
+FINISH
+
+
+## Part 6: Make my plot a better plot!
+
+1. You need to customize it in at least 7 ways to make it better.
+2. In your document, write 1 - 2 sentences about each different customization you added (using bullets – i.e. there should be at least 7 bullet points each with 1-2 sentences), describing how you improved it.
+
+```{r 6q1, fig.align='center'}
+# graph
+chocolate %>%
+    ggplot(aes(
+        x = as.factor(review_date),
+        y = rating,
+        color = review_date
+    )) +
+    geom_violin() +
+    labs( title = "??",
+          x = "Review Date (Years)",
+          y = "Rating (1-5)"
+    ) +
+    geom_boxplot(width=0.1)
+  
+
+
+```
+Here are the 7 ways I made this plot better!
+
+1. labels
+
+2. ticks?
+
+3. gradient color
+
+4. add boxplot?
+
+5. change theme
+
+6. title
+
+7.
+
+
+# print session
 ```{r session}
 options(width = 120)
 sessioninfo::session_info()

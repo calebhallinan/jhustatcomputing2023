@@ -5,7 +5,7 @@ sansfont: Arial
 fontsize: 12pt
 author: Caleb Hallinan
 output: html_document
-date: "2023-09-08"
+date: "2023-09-16"
 ---
 
 <!-- center header - Maybe a better way to do this ? --> 
@@ -37,7 +37,6 @@ Read in Data from TidyTuesday
 # using here package for relative path
 # NOTE: I downloaded jhustatcomputing2023 repository to local machine :)
 chocolate = readRDS(here::here("data", "chocolate.RDS"))
-as_tibble(chocolate)
 # glimpse(chocolate)
 ```
 
@@ -53,7 +52,7 @@ ggplot(chocolate, aes(x=rating)) + geom_histogram(bins=10) + labs(title="Distrib
   theme(plot.title = element_text(hjust = 0.5))
 
 ```
-I believe 10 bins looks the best which is why I choose to output it. When testing other bins, there seemed to be many gaps between bins which made it harder to see the overall distribution of rating score. However, when using 10 bins it removes any gaps between bins and the overall shape of the distribution is clear. However, I would do further testing on the distribution to confirm it is normal.
+I believe 10 bins looks the best which is why I choose to output it. When testing other bins, there seemed to be many gaps between them which made it harder to see the overall distribution of rating score. However, when using 10 bins it removes any gaps between the bins and the overall shape of the distribution is clear. I would likely do further testing on the distribution to confirm it is normal.
 
 
 2. Consider the countries where the beans originated from. How many reviews come from each country of bean origin?
@@ -65,7 +64,7 @@ chocolate %>%
     summarise(reveiw_totals = length(country_of_bean_origin))
 
 ```
-It seems the U.S.A. is not a popular country for producing beans at 33 compared to others (ex. Dominican Republic at 226).
+I only printed out this top of the tibble, but this code gets the total reviews from each country. It seems the U.S.A. is not a popular country for producing beans at 33 compared to others (ex. Dominican Republic at 226).
 
 
 3. What is average rating scores from reviews of chocolate bars that have Ecuador as country_of_bean_origin in this dataset? For this same set of reviews, also calculate (1) the total number of reviews and (2) the standard deviation of the rating scores. Your answer should be a new data frame with these three summary statistics in three columns. Label the name of these columns mean, sd, and total.
@@ -81,12 +80,10 @@ ecuador_stats
 ```
 The summary statistics for Ecuador as a country of bean origin are as follows: Mean = 3.16, Standard Deviation = 0.512, and Total Reviews = 219
 
-?????????? ok to print ecuador?
-
 
 4. Which country makes the best chocolate (or has the highest ratings on average) with beans from Ecuador?
 
-```{r 1q4, fig.align='center'}
+```{r 1q4, fig.align='center', message=FALSE}
 # company with best chocolate from Ecuador
 chocolate[chocolate$country_of_bean_origin == "Ecuador",] %>%
     group_by(country_of_bean_origin, company_location) %>%
@@ -105,10 +102,10 @@ chocolate %>%
     summarise(mean = mean(rating)) %>%
     slice_max(mean, n=3)
 ```
-The top 3 countires with the highest ratings on average are Tobago, China, and Sao Tome & Principe.
+The top 3 countries with the highest ratings on average are Tobago, China, and Sao Tome & Principe.
 
 
-6.Following up on the previous problem, now remove any countries of bean origins that have less than 10 chocolate bar reviews. Now, which top 3 countries have the highest ratings on average?
+6. Following up on the previous problem, now remove any countries of bean origins that have less than 10 chocolate bar reviews. Now, which top 3 countries have the highest ratings on average?
 
 ```{r 1q6, fig.align='center'}
 # top 3 countries
@@ -118,9 +115,7 @@ chocolate %>%
     filter(., num_reviews >= 10) %>%
     slice_max(mean, n=3)
 ```
-After removing countries with less than 10 reviews, the top 3 countries with the highest ratings on average are Solomon Islands, Congo, and Cuba.
-
-???????????? >10 or >=10
+After removing countries with less than 10 reviews, the top 3 countries with the highest ratings on average are Solomon Islands, Congo, and Cuba. NOTE: I used 10 or more.. so less than and NOT equal to 10.
 
 
 7. For this last part, let’s explore the relationship between percent chocolate and ratings.
@@ -144,14 +139,20 @@ chocolate_gt50 = chocolate[chocolate$country_of_bean_origin %in% gt50$country_of
 # print to show df
 # chocolate_gt50
 
+# replace 
+chocolate_gt50 = chocolate[chocolate$country_of_bean_origin %in% gt50$country_of_bean_origin,]
+
+
 # 2. new column
 chocolate_gt50 = chocolate_gt50 %>%
     mutate(
         cocoa_percent_group = case_when(
-            cocoa_percent < 60 ~ "<60%",
-            cocoa_percent >= 60 & cocoa_percent < 70 ~ ">=60 to <70%",
-            cocoa_percent >= 70 & cocoa_percent < 90 ~ ">=70 to <90%",
-            cocoa_percent >= 90 ~ ">90%"
+            as.numeric(str_replace_all(cocoa_percent, "%", "")) < 60 ~ "<60%",
+            as.numeric(str_replace_all(cocoa_percent, "%", "")) >= 60 & 
+              as.numeric(str_replace_all(cocoa_percent, "%", "")) < 70 ~ ">=60% to <70%",
+            as.numeric(str_replace_all(cocoa_percent, "%", "")) >= 70 & 
+              as.numeric(str_replace_all(cocoa_percent, "%", "")) < 90 ~ ">=70% to <90%",
+            as.numeric(str_replace_all(cocoa_percent, "%", "")) >= 90 ~ ">90%"
         )
     )
 
@@ -162,10 +163,15 @@ chocolate_gt50$cocoa_percent_group = factor(chocolate_gt50$cocoa_percent_group)
 # 4. boxplots
 ggplot(chocolate_gt50, aes(x=cocoa_percent_group, y = rating)) + 
     geom_boxplot() +
-    facet_wrap(. ~ country_of_bean_origin)
+    facet_wrap(. ~ country_of_bean_origin) +
+  labs(y = "Rating", x = "Cocoa Percent Groups") +
+  theme(axis.text.x = element_text(angle=90))
+  
+
 ```
-On average.....
-?????? Fix this 
+Using the boxplots, it seems that on average >=60% to <70% of chocolate percentage is most highly rated. However, >=70% to <90% might be very close to the average. Surprisingly, 90% chocolate percentage is typically rating lower than the middle classes. Based on the overall plot, it appears that most countries agree with chocolate percentage ratings!
+
+Note: I did a bit of adding to this plot (x,y labs and ticks 90) but am curious what would make this look the best? Just a lot of graphs on one figure so don't know how I would want this presented.
 
 
 ## Part 2: Join two datasets together
@@ -186,8 +192,6 @@ colnames(gapminder_sub) = c("country_of_bean_origin", "continent")
 by = join_by(country_of_bean_origin == country)
 chocolate_continent = left_join(x = chocolate, y = unique(gapminder[,c("country", "continent")]), by)
 # get rid of NA's by adding correct place
-# print which are NA
-subset(chocolate_continent, is.na(chocolate_continent$continent))
 
 # correct NA's
 chocolate_continent[chocolate_continent$country_of_bean_origin == "Fiji",]$continent = "Oceania"
@@ -253,11 +257,13 @@ chocolate_over10reviews = chocolate_over10reviews[chocolate_over10reviews$countr
 ggplot(chocolate_over10reviews, aes(x=continent, y = rating, fill = continent)) + 
   geom_violin() + 
   geom_boxplot(width=0.1, fill="white") + 
-  labs(title="Distribution of Rating for each Continent",x="Continent", y = "Rating") +
-  theme_classic()
+  labs(title="Distribution of Rating for each Continent",x="Continent", y = "Rating", fill = "Continent") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
 
 ```
-
+Any thoughts on what you would do for this one? I think for a paper I would do this but make it black and white, but not 100% sure lol
 
 
 ## Part 3: Convert wide data into long data
@@ -280,7 +286,7 @@ chocolate$letchin =  as.numeric(str_detect(chocolate$ingredients, "L"))
 # salt
 chocolate$salt = as.numeric(str_detect(chocolate$ingredients, "Sa"))
 ```
-???? S* count as sugar?
+So S* does count for finding sugar
 
 
 2. Create a new set of columns titled char_cocoa, char_sweet, char_nutty, char_creamy, char_roasty, char_earthy that contain a 1 or 0 representing whether or not that the most memorable characteristic for the chocolate bar had that word (1) or not (0). For example, if the word “sweet” appears in the most_memorable_characteristics, then record a 1, otherwise a 0 for that review in the char_sweet column (Hint: check out str_detect() from the stringr package).
@@ -304,12 +310,18 @@ chocolate$char_earthy = as.numeric(str_detect(chocolate$most_memorable_character
 3. For each year (i.e. review_date), calculate the mean value in each new column you created across all reviews for that year. (Hint: If all has gone well thus far, you should have a dataset with 16 rows and 13 columns).
 
 ```{r 3q3, fig.align='center'}
+# create my own mean function
+mymean = function(x){
+  sum(x, na.rm = TRUE) / length(x)
+}
+
 # mean of years
 chocolate_means = chocolate %>%
   group_by(review_date) %>%
-  summarise(across(beans:char_earthy,  mean, na.rm = TRUE))
+  summarise(across(beans:char_earthy,  mymean))
+chocolate_means
 ```
-NOTE: incorrect numbers... I think bc of NAs
+Had to create my own function to make sure NA counted towards denominator of mean but not towards sum for numerator.. not sure if there was a function for this? Couldn't figure it out if there was
 
 
 4. Convert this wide dataset into a long dataset with a new feature and mean_score column.
@@ -318,8 +330,10 @@ NOTE: incorrect numbers... I think bc of NAs
 # convert data
 chocolate_means = chocolate_means %>%
   pivot_longer(-review_date, names_to = "feature", values_to = "mean_score")
+chocolate_means
+
 ```
-NOTE: is correct just numbers are wrong bc of 3 rn
+Everything matches the example online!
 
 
 
@@ -332,18 +346,43 @@ NOTE: is correct just numbers are wrong bc of 3 rn
 4. There should be an informative x-axis and y-axis label
 
 ```{r 4q1234, fig.align='center'}
+# get new colors
+library("paletteer") 
 # graph
-ggplot(chocolate_means, aes(x = review_date, y = mean_score, color = feature)) + 
+chocolate_means %>%
+  # first make new column with plot feature names
+  mutate(plot_feature = str_to_title(str_replace(str_replace(feature, "char_", ""), "_", " "))) %>%
+  # make ggplot object
+ggplot(., aes(x = review_date, y = mean_score, color = plot_feature)) + 
+  # add points
   geom_point() + 
+  # add smooht line
   geom_smooth() + 
+  # labels
   labs(
-        title = "NEED SUBTITLE TOO",
+        title = "How Chocolate Characteristics Have Changed Over Time",
+        subtitle = 
+        "Beans and sugar continue to be essential components of chocolate, while letchin and vanilla have\n slowly become less prominent. Many characteristics used to describe chocolate have seen little change\n regardless of the adjustments in ingredients. Interestingly however, the cocoa characteristic has seen a\n rise in popularity despite the reduced usage of the cocoa butter ingredient in chocolate.",
+        caption = "Caleb Hallinan",
         x = "Years",
-        y = "Mean score??"
-    )
+        y = "Characteristic Usage in Chocolate (%)",
+        color = "Characteristics"
+    ) +
+  # facet wrap by feature
+  facet_wrap(. ~ plot_feature) +
+  # change colors and add percent to y axis
+    scale_colour_manual(values = paletteer_d("ggprism::colors", 12)) + 
+  scale_y_continuous(labels = scales::percent) +
+  # for theme
+  theme_linedraw() +
+  theme(plot.subtitle = element_text(size=8), text = element_text(family = "sans"), plot.title = element_text(face= "bold")) +
+  # get rid of gray background for legend
+  guides(color=guide_legend(override.aes=list(fill=NA))) 
+
+
 
 ```
-Needs a lot of work
+Not a huge fan of the subtitle - seems difficult to format and a lot of text between title and plot. Maybe there is other functions I am missing to make it look better? Also I choose Arial (sans was what it said) font since that is most common for papers. My hope is to make the plot look professional... but I did add colors to the lines because it was fun :)
 
 
 ## Part 5: Make the worst plot you can!
@@ -354,13 +393,16 @@ Needs a lot of work
 ```{r 5q1, fig.align='center'}
 # graph
 ggplot(chocolate, aes(x = review_date, y = cocoa_percent, color = rating)) + 
-  geom_point(alpha = 1 / 10, size = 1) +
+  geom_point(alpha = 1 / 10, size = 1.5) +
   labs(title = "my plot") +
   scale_color_gradient(low="yellow", high="white") +
-  theme_bw()  +
+  theme_classic()  +
   geom_count() + 
   theme(legend.position = "top", axis.text.x = element_text(size = 20, angle=135), axis.title.x = element_text(size = 6), 
-        axis.title.y = element_text(size = 6), plot.title = element_text(color = "pink")) 
+        axis.title.y = element_text(size = 6), plot.title = element_text(color = "pink")) +
+  geom_vline(xintercept = 2008, linetype = "dashed", color = "green") +
+  geom_vline(xintercept = 2012, linetype = "dashed", color = "green") +
+  geom_vline(xintercept = 2017, linetype = "dashed", color = "green")
 
 ```
 Honestly this was tough for me to decipher and I made it! Here are the 7 ways I tried to make it awful (Also, I used numbers instead of bullets to be more clear :)):
@@ -371,16 +413,16 @@ Honestly this was tough for me to decipher and I made it! Here are the 7 ways I 
 
 3. The x and y axis are messed up in different ways. The x axis is way too big, only shows three years, and is rotated 135 degrees. I'd like to see maybe every 2 years instead of 5, normal size font, and definitely not 135 degrees (90 is fine if it makes sense, but here normal would be best). The y axis is out of order, unreadable, and has the percent for every label. I'd make sure all font is readable and spaced out, and remove the % sign while adding it to the y label instead.
 
-4. The legend and its colors are hard to read, randomly at the top, and uses odd colors. This helped me in understanding good legend position, how to change the color gradient, and the cool addition custimations to the legend you can make!
+4. The legend and its colors are hard to read, randomly at the top, and uses odd colors. This helped me in understanding good legend position, how to change the color gradient, and the cool addition customization to the legend you can make!
 
-5. theme bw
+5. Due to the colors being yellow, the theme_classic is not the most ideal theme to have as it makes it near impossible to see the gradient of the colors (especially the number 4). While the theme_classic is a great theme I like personally, I needed a darker theme to highlight the yellow points which I could have gotten from the theme park package we learned about in class.
 
-6. alpha for points and too big n
+6. The alpha values for the points being 1/10 is incredibly light, making it near impossible to see the 4 values. Not only that, but the size of the points are so big that they overlap with each other and block out smaller points. Changing the alpha and point size is an incredible tool due to the overlapping of points and making point size similar to text size (as in make it look realistic).
 
-7. Overall, this plot isn't really expressing anything of importance. There are multiple points per year, and 
-This helped me get an idea of w
+7. Instead of using the theme to have lines in the background of the plot, I used dotted green lines to show only 3 of the years present (and not even the ones on the legend). This is not ideal in the slightest, but vline/hline is a very useful function for if I wanted to separate data or could also draw segmented lines using geom_segement().
 
-FINISH
+Overall, this plot isn't really expressing anything of importance. A viewer would not know what is trying to be presented and struggle to just look at it.
+
 
 
 ## Part 6: Make my plot a better plot!
@@ -389,41 +431,71 @@ FINISH
 2. In your document, write 1 - 2 sentences about each different customization you added (using bullets – i.e. there should be at least 7 bullet points each with 1-2 sentences), describing how you improved it.
 
 ```{r 6q1, fig.align='center'}
+
+# get new theme
+remotes::install_github("MatthewBJane/theme_park")
+library(ThemePark)
+
+
 # graph
 chocolate %>%
+  # make object
     ggplot(aes(
         x = as.factor(review_date),
         y = rating,
         color = review_date
     )) +
-    geom_violin() +
-    labs( title = "??",
+  # add violinplots
+    geom_violin(width = 1, adjust = 1.5) +
+    labs( title = "Chocolate Rating Distribution Over Time",
           x = "Review Date (Years)",
-          y = "Rating (1-5)"
+          y = "Rating (1-4)",
+          caption = "Design by Caleb Hallinan"
     ) +
-    geom_boxplot(width=0.1)
-  
+  # add boxplots
+    geom_boxplot(width=0.1) +
+  # make colots
+  scale_color_gradient(low = "#946B2D", high = "#946B2D") +
+  # get rid of legend
+  guides(color = "none") +
+  # change text
+  theme(axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        axis.title.x = element_text(vjust = 0),
+        axis.title.y = element_text(vjust = 1),
+        plot.caption = element_text(size = 10)) +  
+  scale_x_discrete(breaks = sort(unique(chocolate$review_date))[c(TRUE, FALSE)])+
+  # make ravenclaw theme
+  theme_ravenclaw() +
+  # add median over time
+    geom_hline(yintercept = median(chocolate$rating), linetype = "dashed", color = "#946B2D") +
+  # add text
+  geom_text(aes(x = 13, y = 1,
+                label = "Dashed line: Median rating over time"),
+            stat = "unique")
+
 
 
 ```
 Here are the 7 ways I made this plot better!
 
-1. labels
+1. The first thing I did was create x and y labels that were not the variable names. I capitalized them while adding their units in parentheses.
 
-2. ticks?
+2. Personally, I really like seeing the boxplots in the violin plots for the extra statistics you see (median and outliers especially). Hence, I added small boxplots inside the violin plots to better understand the distribution of the data. They are a bit small which is unfortunate, but in reality I would space out the violin plots more (which I couldn't do without saving the figure) and make the box plots bigger.
 
-3. gradient color
+3. I actually decided to remove the legend altogether. It only showed the review date color scheme, but that was unnecessary for the plot. Doing this made the figure larger, making the boxplots inside the violin plots look much better.
 
-4. add boxplot?
+4. I added a title and caption to the plot. Now we have an informative title that explains what this plot is showing, and has my name so you know who made it!
 
-5. change theme
+5. The x and y tick labels were pretty small, so I increased their size while also making the x axis every 2 instead of every year. Every year made the plot a lot busier, and I don't think making it every other hurts the readability much.
 
-6. title
+6. I added a dashed line to show the median rating over time. I thought this might help with showing how the rating changed over time.
 
-7.
+7. Finally, I changed the theme to theme_ravenclaw! The colors are the official colors for ravenclaw and I got the theme from the "ThemePark" package. I am a ravenclaw (in Harry Potter) so I thought why not it looks kinda fun :)
 
+I am curious if there is a better way to show this information besides violin plots? I was trying to research other ways but was unsuccessful, so hoping to see what others do for this plot!
 
-# print session
+# Print Session
 ```{r session}
 options(width = 120)
 sessioninfo::session_info()
